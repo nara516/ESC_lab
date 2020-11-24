@@ -1,0 +1,472 @@
+/*	bp.c	 */
+/*	역전파에 의한 신경망 학습	*/
+/*	사용방법	*/
+/*	cmd -> cd 경로, 파일명 학습데이터파일명	*/
+/*	오차의 추이와 학습 결과가 되는 결합계수 등을 출력합니다.	*/
+/* 알고리즘 */
+// 난수 초기화 > 입력층 가중치 초기화 > 학습데이터 읽기 > 학습(forward, olearn, hlearn, 오차적산, 오차출력) > 학습결과인 연결강도 출력 > ref data값, 출력값 출력
+// > 테스트데이터 읽어오기 > forward() 후 분류 > 정확도출력
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+/* 기호상수 정의 */
+#define INPUTNO 4		//입력층의 셀 수
+#define HIDDENNO 3	//중간층의 셀 수
+#define ALPHA 0.01		//학습계수
+#define SEED 65535	//난수 시드
+#define MAXINPUTNO 120	//학습 데이터의 최대 개수 (ref 120, test 30)
+#define MAXTEST 30
+#define BIGNUM 100	//오차의 초깃값
+#define LIMIT 0.1		//오차의 상한값
+
+
+/* 함수 프로토타입 선언 */
+double s(double u);						//시그모이드 함수
+void initwh(double wh[HIDDENNO][INPUTNO + 1]);		//중간층 가중치 초기화
+void initwo(double wo[HIDDENNO + 1]);			//출력층 가중치 초기화
+double drnd(void);						//난수 생성
+void print(double wh[HIDDENNO][INPUTNO + 1], double wo1[HIDDENNO + 1], double wo2[HIDDENNO + 1], double wo3[HIDDENNO + 1]);	//결과출력
+double forward(double wh[HIDDENNO][INPUTNO + 1], double wo[HIDDENNO + 1], double hi[], double e[INPUTNO + 1]);			//순방향계산
+void olearn(double wo[HIDDENNO + 1], double hi[], double e[INPUTNO + 1], double o, int out);						//출력층 가중치 조정
+int getdata(char* argv[], double e[][INPUTNO + 3]);										//ref data 읽어들이기
+int gettestdata(char* argv[], double t[][INPUTNO + 3]); 										//test data 읽어들이기
+void hlearn(double wh[HIDDENNO][INPUTNO + 1], double wo[HIDDENNO + 1], double hi[], double e[INPUTNO + 1], double o, int out);		//중간층 가중치 조정
+
+
+/* main함수 */
+int main(int argc, char *argv[])
+{
+	double wh[HIDDENNO][INPUTNO + 1];		//중간층 가중치
+	double wo1[HIDDENNO + 1];			//출력층 가중치
+	double wo2[HIDDENNO + 1];
+	double wo3[HIDDENNO + 1];
+	double e[MAXINPUTNO][INPUTNO + 3];	//학습데이터 세트
+	double hi[HIDDENNO + 1];			//중간층 출력
+	double o1, o2, o3;				//출력
+	int out1 = 0;
+	int out2 = 1;
+	int out3 = 2;
+	double err1 = BIGNUM;			//오차평가
+	double err2 = BIGNUM;
+	double err3 = BIGNUM;
+	int i, j;					//반복 제어 변수
+	int n_of_e;				//학습 데이터 개수
+	int count = 0;				//반복 횟수 카운터
+
+	/* 난수 초기화 */
+	srand(SEED);
+
+	/* 가중치 초기화 */
+	initwh(wh);
+	initwo(wo1);
+	initwo(wo2);
+	initwo(wo3);
+
+	printf("가중치 초기화\n");
+	print(wh, wo1, wo2, wo3);
+
+	/* 학습 데이터 읽어 들이기 */
+	n_of_e = getdata(argv, e);
+	printf("ref data 개수: %d \n", n_of_e);
+
+	/* 학습 */
+	while (err1 > LIMIT || err2 > LIMIT || err3 > LIMIT) {
+
+		err1 = 0.0;
+		err2 = 0.0;
+		err3 = 0.0;
+
+		for (j = 0; j < n_of_e; ++j) {
+
+			printf("%d번째 학습데이터 연산\n", j + 1);
+
+			/* 순방향 계산 */
+			o1 = forward(wh, wo1, hi, e[j]);
+			o2 = forward(wh, wo2, hi, e[j]);
+			o3 = forward(wh, wo3, hi, e[j]);
+
+			/* 출력층의 가중치 조정 */
+			olearn(wo1, hi, e[j], o1, out1);
+			olearn(wo2, hi, e[j], o2, out2);
+			olearn(wo3, hi, e[j], o3, out3);
+
+			/* 중간층의 가중치 조정 */
+			hlearn(wh, wo1, hi, e[j], o1, out1);
+			hlearn(wh, wo2, hi, e[j], o2, out2);
+			hlearn(wh, wo3, hi, e[j], o3, out3);
+
+			/* 오차 적산 */
+			err1 += (o1 - e[j][INPUTNO + out1])*(o1 - e[j][INPUTNO + out1]);
+			err2 += (o2 - e[j][INPUTNO + out2])*(o2 - e[j][INPUTNO + out2]);
+			err3 += (o3 - e[j][INPUTNO + out3])*(o3 - e[j][INPUTNO + out3]);
+
+			printf("err1:%lf, err2:%lf, err3:%lf \n", err1, err2, err3);
+
+		}
+
+		++count;
+
+		/* 루프 탈출 */
+		if (count > 200)		//모든 학습데이터 10번 반복학습
+			break;
+
+		/* 오차출력 */
+		printf("count : %d     err1:%lf, err2:%lf, err3:%lf \n", count, err1, err2, err3);
+		printf("\n");
+
+	}	/* 학습종료 */
+
+
+	/* 연결강도 출력 */
+	printf("학습 이후 연결강도 출력\n");
+	print(wh, wo1, wo2, wo3);
+
+	/* 학습 데이터에 대한 출력 */
+	for (i = 0; i < n_of_e; ++i) {
+
+		printf("%d번째 ref data \n", i + 1);
+		printf("ref input : %.1lf, %.1lf, %.1lf, %.1lf", e[i][0], e[i][1], e[i][2], e[i][3]);
+		printf("\t label : %.1lf, %.1lf, %.1lf\n", e[i][4], e[i][5], e[i][6]);
+
+		o1 = forward(wh, wo1, hi, e[i]);			//학습한 연결강도값으로 다시 출력값 계산
+		o2 = forward(wh, wo2, hi, e[i]);
+		o3 = forward(wh, wo3, hi, e[i]);
+
+		printf("o1:%lf, o2:%lf, o3:%lf \n", o1, o2, o3);
+		printf("\n");
+
+	}
+
+
+	/* test */
+	double t[MAXTEST][INPUTNO + 3];
+	double t_o1, t_o2, t_o3;
+	int get_test;
+	int cnt = 0;
+	int iris = 0;
+
+	get_test = gettestdata(argv, t);
+	printf("test data 개수: %d \n", get_test);
+	printf("test 시작\n");
+
+	for (i = 0; i < get_test; ++i) {
+
+		printf("%d번째 test data \n", i + 1);
+		printf("test input : %.1lf, %.1lf, %.1lf, %.1lf", t[i][0], t[i][1], t[i][2], t[i][3]);
+		printf("\t label : %.1lf, %.1lf, %.1lf\n", t[i][4], t[i][5], t[i][6]);
+
+		t_o1 = forward(wh, wo1, hi, t[i]);
+		t_o2 = forward(wh, wo2, hi, t[i]);
+		t_o3 = forward(wh, wo3, hi, t[i]);
+
+		printf("t_o1:%lf, t_o2:%lf, t_o3:%lf \n", t_o1, t_o2, t_o3);
+
+		if ((t_o1 > t_o2) && (t_o1 > t_o3)) {
+
+			iris = 1;
+
+			if (t[i][4] == 1.0 && t[i][5] == 0.0 && t[i][6] == 0.0 && iris == 1)
+
+				cnt++;
+
+		}
+
+		else if ((t_o2 > t_o1) && (t_o2 > t_o3)) {
+
+			iris = 2;
+
+			if (t[i][4] == 0.0 && t[i][5] == 1.0 && t[i][6] == 0.0 && iris == 2)
+
+				cnt++;
+
+		}
+
+		else if ((t_o3 > t_o1) && (t_o3 > t_o2)) {
+
+			iris = 3;
+
+			if (t[i][4] == 0.0 && t[i][5] == 0.0 && t[i][6] == 1.0 && iris == 3)
+
+				cnt++;
+
+		}
+
+		printf("분류결과 : %d \n", iris);
+		printf("\n");
+
+	}
+
+	printf("분류 정확도 : %.2lf \n", ((double)cnt / get_test));
+	return 0;
+
+}
+
+
+/* hlearn() 함수 */
+/* 중간층 가중치 학습 */
+void hlearn(double wh[HIDDENNO][INPUTNO + 1], double wo[HIDDENNO + 1], double hi[], double e[INPUTNO + 1], double o, int out)
+{
+	//printf("hlearn() 실행\n"); 
+
+	int i, j;				//반복제어
+	double dj;			//중간층 가중치 계산에 이용
+
+	for (j = 0; j < HIDDENNO; ++j) {		//중간층의 각 셀 j를 대상
+
+		dj = hi[j] * (1 - hi[j])*wo[j] * (e[INPUTNO + out] - o)*o*(1 - o);
+
+		for (i = 0; i < INPUTNO; ++i) {	//i번째 가중치 처리
+
+			wh[j][i] += ALPHA * e[i] * dj;
+
+		}
+
+		wh[j][i] += ALPHA * (-1.0)*dj;	//임계치 학습
+
+	}
+
+	//printf("hlearn() 종료\n");
+
+}
+
+
+/* getdata() 함수 */
+/* 학습 데이터 읽기 */
+int getdata(char* argv[], double e[][INPUTNO + 3])
+{
+	int n_of_e = 0;		//데이터 세트  개수
+	int i = 0;			//반복 제어 변수
+
+	/* 데이터 입력 */
+	FILE *fp1 = NULL;
+
+	fp1 = fopen(argv[1], "r");
+
+	if (fp1 == NULL)
+		printf("reference_data 파일 열기 실패\n");
+	else
+		printf("reference_data 파일 열기 성공\n");
+
+	for (i = 0; i < MAXINPUTNO; i++) {
+
+		//printf("%d번째 ref data : ", i+1);			
+
+		fscanf(fp1, "%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", &e[i][0], &e[i][1], &e[i][2], &e[i][3], &e[i][4], &e[i][5], &e[i][6]);
+		//printf("%.1lf, %.1lf, %.1lf, %.1lf, %.1lf,%.1lf, %.1lf\n", e[i][0], e[i][1], e[i][2], e[i][3], e[i][4], e[i][5], e[i][6]);
+
+		++n_of_e;
+
+	}
+
+	fclose(fp1);
+
+	printf("refrence_data 입력 종료\n");
+
+	return n_of_e;
+
+}
+
+int gettestdata(char* argv[], double t[][INPUTNO + 3])
+{
+	int i = 0;		//반복 제어 변수
+
+	/* 데이터 입력 */
+	int get_test = 0;
+	FILE *fp2 = NULL;
+
+	fp2 = fopen(argv[2], "r");
+
+	if (fp2 == NULL)
+		printf("test_data 파일 열기 실패\n");
+	else
+		printf("test_data 파일 열기 성공\n");
+
+	for (i = 0; i < MAXTEST; i++) {
+
+		//printf("%d번째 test data : ", i+1);			
+
+		fscanf(fp2, "%lf,%lf,%lf,%lf,%lf,%lf,%lf\n", &t[i][0], &t[i][1], &t[i][2], &t[i][3], &t[i][4], &t[i][5], &t[i][6]);
+		//printf("%.1lf, %.1lf, %.1lf, %.1lf, %.1lf,%.1lf,%.1lf\n", t[i][0], t[i][1], t[i][2], t[i][3], t[i][4], t[i][5], t[i][6]);
+
+		++get_test;
+
+	}
+
+	fclose(fp2);
+
+	printf("test_data 입력종료 \n");
+
+	return get_test;
+
+}
+
+
+/* olearn() 함수 */
+/* 출력층 가중치 학습 */
+void olearn(double wo[HIDDENNO + 1], double hi[], double e[INPUTNO + 1], double o, int out)
+{
+	//printf("olearn() 실행\n");
+
+	int i;				//반복제어
+	double d;				//가중치 계산에 이용
+
+	d = (e[INPUTNO + out] - o)*o*(1 - o);	//오차계산
+	for (i = o; i < HIDDENNO; ++i) {
+
+		wo[i] += ALPHA * hi[i] * d;	//연결강도 학습
+
+	}
+
+	wo[i] += ALPHA * (-1.0)*d;		//임계치 학습
+
+	//printf("olearn() 종료\n");
+
+}
+
+
+/* forward() 함수 */
+/* 순방향 계산 */
+double forward(double wh[HIDDENNO][INPUTNO + 1], double wo[HIDDENNO + 1], double hi[], double e[INPUTNO + 1])
+{
+	//printf("forward() 실행\n");
+
+	int i, j;		//반복제어
+	double u;		//가중합 계산
+	double o;		//출력계산
+
+	/* hi 계산 */
+	for (i = 0; i < HIDDENNO; ++i) {
+
+		u = 0;
+
+		for (j = 0; j < INPUTNO; ++j) {		//가중합을 구한다
+
+			u += e[j] * wh[i][j];
+
+		}
+
+		u -= wh[i][j];			//임계치 처리
+		hi[i] = s(u);			//중간층 출력 hi에 시그모이드 적용
+
+	}
+
+	/* 출력 o계산 */
+	o = 0;			//출력층 출력 o
+	for (i = 0; i < HIDDENNO; ++i) {
+
+		o += hi[i] * wo[i];
+
+	}
+
+	o -= wo[i];		//임계치 처리
+
+	//printf("forward() 종료\n");
+
+	return s(o);
+
+}
+
+
+/* print() 함수 */
+/* 결과 출력 */
+void print(double wh[HIDDENNO][INPUTNO + 1], double wo1[HIDDENNO + 1], double wo2[HIDDENNO + 1], double wo3[HIDDENNO + 1])
+{
+	//printf("print() 실행\n"); 
+
+	int i, j;		//반복제어
+
+	for (i = 0; i < HIDDENNO; i++) {
+
+		for (j = 0; j < INPUTNO; ++j) {
+
+			printf("wh[%d][%d] : %lf  ", i, j, wh[i][j]);
+
+		}
+
+		printf("\n");
+
+	}
+
+	for (i = 0; i < HIDDENNO + 1; ++i) {
+
+		printf("wo1[%d]:%lf, wo2[%d]:%lf, wo3[%d]:%lf \n", i, wo1[i], i, wo2[i], i, wo3[i]);
+
+	}
+
+	printf("\n");
+	//printf("print() 종료\n");
+
+}
+
+
+/*initwh() 함수 */
+/* 중간층 가중치 초기화 */
+void initwh(double wh[HIDDENNO][INPUTNO + 1])
+{
+	//printf("initwh() 실행\n");
+
+	int i, j;		//반복제어
+
+	/* 난수에 의한 연결강도 결정 */
+	for (i = 0; i < HIDDENNO; ++i) {
+
+		for (j = 0; j < INPUTNO + 1; ++j) {
+
+			wh[i][j] = drnd();
+
+		}
+
+	}
+
+	//printf("initwh() 종료\n");
+
+}
+
+
+/* initwo() 함수 */
+/* 출력층 가중치 초기화 */
+void initwo(double wo[HIDDENNO + 1])
+{
+	//printf("initwo() 실행\n");
+
+	int i;		//반복제어
+
+	for (i = 0; i < HIDDENNO + 1; ++i) {
+
+		wo[i] = drnd();
+
+	}
+
+	//printf("initwo() 종료\n");
+
+}
+
+
+/* drnd() 함수 */
+/* 난수 생성 */
+double drnd(void)
+{
+	//printf("drnd() 실행\n"); 
+
+	double rndno;		//생성한 난수
+
+	while ((rndno = (double)rand() / RAND_MAX) == 1.0);
+	rndno = rndno * 2 - 1;	//-1~1 사이 난수 생성
+
+	//printf("drnd() 종료\n"); 
+
+	return rndno;
+
+}
+
+
+/* s() 함수 */
+/* 시그모이드 함수 */
+double s(double u)
+{
+
+	return 1.0 / (1.0 + exp(-u));
+
+}
