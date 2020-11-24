@@ -1,0 +1,44 @@
+#include <stdio.h>
+
+int main(void)
+{
+	int upx, upy;
+	int lowx, lowy;
+	int upa, upb;
+	int lowa, lowb;
+
+	upx = 8;
+	upy = 12;
+	lowx = 15;
+	lowy = 5;
+
+	printf("좌표 upper letf a, upper left b, lower right a, lower right b를 입력하세요 : ");
+	scanf("%d %d %d %d",&upa, &upb, &lowa, &lowb);
+
+	if(upa>lowa || upb<lowb) {
+
+		printf("좌표를 다시 입력해주세요. \n");
+
+		printf("좌표 upper letf a, upper left b, lower right a, lower right b를 입력하세요 : ");
+		scanf("%d %d %d %d",&upa, &upb, &lowa, &lowb);
+
+
+	}
+
+
+	if( (lowa < upx) || (lowb > upy) || (upa > lowx) || (upb < lowy) ) {
+
+		printf("겹치지 않음 \n");
+
+	}
+
+	else {
+
+		printf("겹침 \n");
+
+	}
+
+	return 0;
+
+
+}

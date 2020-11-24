@@ -1,0 +1,65 @@
+#include <stdio.h>
+#define ROWS 4
+#define COLS 4
+#define X 4
+
+int main(int argc, char *argv[])
+{
+	FILE *fp1 = NULL;
+	FILE *fp2 = NULL;
+	FILE *fp3 = NULL;
+
+	int i,j,k = 0; 
+
+	int matrix_a[ROWS][COLS]={0};
+	int matrix_b[ROWS][COLS]={0};
+	int matrix_result[ROWS][COLS]={0};
+
+
+	fp1 = fopen(argv[1], "r");
+
+		if( fp1 == NULL)
+			printf("matrix_a 파일 열기 실패\n");
+		else
+			printf("matrix_a 파일 열기 성공\n");
+	
+		for(i=0; i<ROWS; i++)
+			for(j=0; j<COLS; j++)
+				fscanf(fp1, "%d", &matrix_a[i][j]);
+	fclose(fp1);
+
+
+	fp2 = fopen(argv[2], "r");
+
+		if( fp2 == NULL)
+			printf("matrix_b 파일 열기 실패\n");
+		else
+			printf("matrix_b 파일 열기 성공\n");
+	
+		for(i=0; i<ROWS; i++)
+			for(j=0; j<COLS; j++)
+				fscanf(fp2, "%d", &matrix_b[i][j]);
+	fclose(fp2);
+
+
+	fp3 = fopen(argv[3], "w");
+
+		if( fp3 == NULL)
+			printf("matrix_result 파일 열기 실패\n");
+		else
+			printf("matrix_result 파일 열기 성공\n");
+
+	for( i=0; i<ROWS ; i++) {	
+		for( j=0 ; j<COLS ; j++) {
+			for( k=0 ; k<X ; k++) {
+				matrix_result[i][j] += matrix_a[i][k] * matrix_b[k][j];
+			}
+			fprintf(fp3, "%5d", matrix_result[i][j]);
+		}
+		fprintf(fp3, "\n");
+	}
+	fclose(fp3);
+
+
+	return 0;
+}

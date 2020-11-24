@@ -1,0 +1,146 @@
+#include <stdio.h>
+#include <math.h>
+#define SPT_SIZE 1676	//서포트벡터 개수
+#define INPUT_SIZE 742	//입력벡터 개수
+
+struct support {		//서포트벡터1,2
+
+	double sup1[SPT_SIZE];
+	double sup2[SPT_SIZE];
+
+};
+
+struct input {		//입력벡터1,2
+
+	double in1[INPUT_SIZE];
+	double in2[INPUT_SIZE];
+
+};
+
+
+int main (int argc, char *argv[])
+{
+	
+	double gm;			//감마
+	double b;				//바이어스
+	double wei[SPT_SIZE];		//weight 값
+	double target[INPUT_SIZE];		//target
+
+	struct support sv;			//서포트 벡터 1,2
+	struct input ip;			//입력 벡터 1,2
+
+	FILE *fp1, *fp2;
+
+
+//파일 읽어오기
+	
+	fp1 = fopen(argv[1], "r");	
+		
+		if( fp1 == NULL)
+			printf("my_model 파일 열기 실패\n");
+		else
+			printf("my_model 파일 열기 성공\n");
+	 
+	fscanf(fp1, "svm_type epsilon_svr\n");
+	fscanf(fp1, "kernel_type rbf\n");
+	fscanf(fp1, "gamma %lf\n", &gm);
+	fscanf(fp1, "nr_class 2\n");
+	fscanf(fp1, "total_sv 1676\n");
+	fscanf(fp1, "rho %lf\n", &b);
+	fscanf(fp1, "SV\n");
+
+	for(int i=0 ; i<SPT_SIZE ; i++) {
+
+		fscanf(fp1, "%lf 0:%lf 1:%lf", &wei[i], &sv.sup1[i], &sv.sup2[i]);
+
+	} 
+
+	fclose(fp1);
+	
+
+	fp2 = fopen(argv[2], "r");	
+		
+		if( fp2 == NULL)
+			printf("my_test 파일 열기 실패\n");
+		else
+			printf("my_test 파일 열기 성공\n");
+
+	for(int i=0 ; i<INPUT_SIZE ; i++) {
+
+		fscanf(fp2, "%lf 0: %lf 1: %lf", &target[i], &ip.in1[i], &ip.in2[i]);
+
+	}
+
+	fclose(fp2);
+	 
+
+//svm
+
+	double sum;
+	double e;
+	double svm[INPUT_SIZE];
+
+	for(int i=0 ; i<INPUT_SIZE ; i++) {
+		
+		sum = 0;
+		e = 0;
+
+		for(int j=0; j<SPT_SIZE ; j++) {
+
+			double a1 = pow( (ip.in1[i]-sv.sup1[j]), 2);
+			double a2 = pow( (ip.in2[i]-sv.sup2[j]), 2);
+
+			sum = a1+a2;
+			e += (wei[j] * exp(-sum * gm));
+
+		}
+
+		svm[i] = e+b;
+			
+	}
+
+
+//평균제곱오차 mse : (svm평균 - target)^2의 합 / 입력벡터개수
+
+	double svm_ave;
+	double mse;
+	
+	sum = 0;
+
+	for(int i=0 ; i<INPUT_SIZE ; i++) {
+
+		sum += svm[i];
+	
+	}
+		
+	svm_ave = sum/INPUT_SIZE;
+
+	sum = 0;
+
+	for(int i=0 ; i<INPUT_SIZE ; i++) {
+
+		sum += pow( (svm_ave - target[i]), 2);
+
+	}
+
+	mse = sum/INPUT_SIZE;
+
+
+	printf("mse : %lf \n", mse);
+
+
+//값 확인
+
+	for(int i=0 ; i<INPUT_SIZE ; i++) {
+		printf("svm[%d] : %lf  \n", i+1, svm[i]);
+	
+
+	}
+
+	printf("mse : %lf \n", mse);
+
+
+return 0;
+
+
+}

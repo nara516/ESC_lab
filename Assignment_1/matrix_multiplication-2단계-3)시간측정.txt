@@ -1,0 +1,124 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#define ROWS 1024
+#define COLS 1024
+#define X 1024
+
+int main(int argc, char *argv[])
+{	
+	FILE *fp1 = NULL;
+	FILE *fp2 = NULL;
+	FILE *fp3 = NULL;
+
+	int i,j,k ; 
+
+   	int **a = NULL;
+	int **b = NULL;
+	int **result = NULL;
+
+	clock_t start1, end1, start2, end2, start3, end3;
+	float t1, t2, t3, t4;
+
+
+	start1 = clock();
+	
+	fp1 = fopen(argv[1], "r");
+
+		if( fp1 == NULL)
+			printf("matrix_a_large 파일 열기 실패\n");
+		else
+			printf("matrix_a_large 파일 열기 성공\n");
+
+		a = (int **)malloc( sizeof(int *) *ROWS);
+		for(i=0; i<ROWS ; i++)
+			a[i] = (int*)malloc(sizeof(int)*COLS);
+	
+		for(i=0; i<ROWS; i++)
+			for(j=0; j<COLS; j++)
+				fscanf(fp1, "%d", &a[i][j]);
+
+	fclose(fp1);
+
+
+	fp2 = fopen(argv[2], "r");
+
+		if( fp2 == NULL)
+			printf("matrix_b_large 파일 열기 실패\n");
+		else
+			printf("matrix_b_large 파일 열기 성공\n");
+	
+		b = (int **)malloc( sizeof(int *) *ROWS);
+		for(i=0; i<ROWS ; i++)
+			b[i] = (int*)malloc(sizeof(int)*COLS);
+	
+		for(i=0; i<ROWS; i++)
+			for(j=0; j<COLS; j++)
+				fscanf(fp2, "%d", &b[i][j]);
+
+	fclose(fp2);
+
+	end1 = clock();
+	t1 = (float)(end1-start1);
+	
+
+	fp3 = fopen(argv[3], "w");	
+
+		if( fp3 == NULL)
+			printf("matrix_result_large 파일 열기 실패\n");
+		else
+			printf("matrix_result_large 파일 열기 성공\n");
+
+		result = (int **)malloc( sizeof(int *) *ROWS);
+		for(i=0; i<ROWS ; i++)
+			result[i] = (int*)malloc(sizeof(int)*COLS);
+	
+
+	start2 = clock();
+	
+		for( i=0; i<ROWS ; i++) 	//행렬 곱 계산
+			for( j=0 ; j<COLS ; j++) 
+				for( k=0 ; k<X ; k++) 
+					result[i][j] += a[i][k]*b[k][j];
+
+	end2 = clock();
+	t2 = (float)(end2-start2);
+	
+	
+	start3 = clock();
+	
+		for( i=0; i<ROWS ; i++) 	//결과를 파일에 출력
+			for( j=0 ; j<COLS ; j++) 
+					fprintf(fp3, "%d ", result[i][j]);
+				fprintf(fp3, "\n");
+				
+	end3 = clock();
+	t3 = (float)(end3-start3);
+	
+	fclose(fp3);
+
+	
+	for(i=0 ; i<X; i++)
+		free(a[i]);
+	free(a);
+
+	for(i=0 ; i<X; i++)
+		free(b[i]);
+	free(b);
+	
+	for(i=0 ; i<X; i++)
+		free(result[i]);
+	free(result);
+
+
+	t4 = (float)(end2-start1);
+
+	printf("파일로부터 행렬을 읽어 들이는 부분 : %.3f [ms]\n", t1);
+	printf("행렬의 곱을 계산하는 부분 : %.3f [ms]\n", t2);
+	printf("행렬의 곱의 결과를 2차원 배열에 쓰는 부분 : %.3f [ms]\n", t3);
+	printf("실행시간 비교 [방법1] : %.3f [ms]\n", t4);
+
+
+	return 0;
+
+}

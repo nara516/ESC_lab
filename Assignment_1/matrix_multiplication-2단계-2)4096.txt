@@ -1,0 +1,95 @@
+#include <stdio.h>
+#include <stdlib.h>
+#define ROWS 1024
+#define COLS 1024
+#define X 1024
+
+int main(int argc, char *argv[])
+{
+
+	FILE *fp1 = NULL;
+	FILE *fp2 = NULL;
+	FILE *fp3 = NULL;
+
+	int i,j,k = 0;
+
+   	int **a = NULL;
+	int **b = NULL;
+	int **result = NULL;
+
+
+	fp1 = fopen(argv[1], "r");
+
+		if( fp1 == NULL)
+			printf("matrix_a_large 파일 열기 실패\n");
+		else
+			printf("matrix_a_large 파일 열기 성공\n");
+
+		a = (int **)malloc( sizeof(int *) *ROWS);
+		for(i=0; i<ROWS ; i++)
+			a[i] = (int*)malloc(sizeof(int)*COLS);
+	
+		for(i=0; i<ROWS; i++)
+			for(j=0; j<COLS; j++)
+				fscanf(fp1, "%d", &a[i][j]);
+
+	fclose(fp1);
+
+
+	fp2 = fopen(argv[2], "r");
+
+		if( fp2 == NULL)
+			printf("matrix_b_large 파일 열기 실패\n");
+		else
+			printf("matrix_b_large 파일 열기 성공\n");
+	
+		b = (int **)malloc( sizeof(int *) *ROWS);
+		for(i=0; i<ROWS ; i++)
+			b[i] = (int*)malloc(sizeof(int)*COLS);
+	
+		for(i=0; i<ROWS; i++)
+			for(j=0; j<COLS; j++)
+				fscanf(fp2, "%d", &b[i][j]);
+
+	fclose(fp2);
+
+
+	fp3 = fopen(argv[3], "w");	
+
+		if( fp3 == NULL)
+			printf("matrix_result_large 파일 열기 실패\n");
+		else
+			printf("matrix_result_large 파일 열기 성공\n");
+
+		result = (int **)malloc( sizeof(int *) *ROWS);
+		for(i=0; i<ROWS ; i++)
+			result[i] = (int*)malloc(sizeof(int)*COLS);
+	
+		for( i=0; i<ROWS ; i++) {	
+			for( j=0 ; j<COLS ; j++) {
+				for( k=0 ; k<X ; k++) {
+					result[i][j] += a[i][k]*b[k][j];
+				}
+				fprintf(fp3, "%d ", result[i][j]);
+			}
+			fprintf(fp3, "\n");
+		}
+	fclose(fp3);
+
+	
+	for(i=0 ; i<X; i++)
+		free(a[i]);
+	free(a);
+
+	for(i=0 ; i<X; i++)
+		free(b[i]);
+	free(b);
+	
+	for(i=0 ; i<X; i++)
+		free(result[i]);
+	free(result);
+
+
+	return 0;
+
+}

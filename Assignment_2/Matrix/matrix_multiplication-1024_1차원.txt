@@ -1,0 +1,94 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#define X 1024
+
+int main(void)
+{
+
+	FILE *fp1, *fp2, *fp3;
+
+	int i,j,k; 
+
+   	int *a = NULL;
+	int *b = NULL;
+	int *result = NULL;
+
+	clock_t start, end;
+	float t;
+
+	
+	start = clock();
+
+	fp1 = fopen("matrix_a_medium.txt", "r");
+
+		if( fp1 == NULL)
+			printf("matrix_a_medium 파일 열기 실패\n");
+		else
+			printf("matrix_a_medium 파일 열기 성공\n");
+
+		a = (int*)malloc( sizeof(int*) * (X*X));
+				
+		for(i=0; i<X*X; i++)
+			fscanf(fp1, "%d", &a[i]);
+
+	fclose(fp1);
+
+
+	fp2 = fopen("matrix_b_medium.txt", "r");
+
+		if( fp2 == NULL)
+			printf("matrix_b_medium 파일 열기 실패\n");
+		else
+			printf("matrix_b_medium 파일 열기 성공\n");
+	
+		b = (int*)malloc( sizeof(int*) * (X*X));
+			
+		for(i=0; i<X*X; i++)
+			fscanf(fp2, "%d", &b[i]);
+
+	fclose(fp2);
+
+
+	fp3 = fopen("matrix_result_medium.txt", "w");	
+
+		if( fp3 == NULL)
+			printf("matrix_result_medium 파일 열기 실패\n");
+		else
+			printf("matrix_result_medium 파일 열기 성공\n");
+
+		result = (int*)malloc( sizeof(int*) * (X*X));
+				
+		for( i=0 ; i<X ; i++) {
+			for( j=0 ; j<X ; j++) {
+				for( k=0 ; k<X ; k++)
+					result[i*X+j]+= a[i*X+k] * b[k*X+j];
+				}
+			}
+			
+
+		for( i=0 ; i<X ; i++) {
+			for( j=0 ; j<X ; j++) {
+
+				fprintf(fp3, "%d ", result[i*X+j]);
+
+			}
+			fprintf(fp3, "\n");
+		}
+
+	fclose(fp3);
+
+
+	free(a);
+	free(b);
+	free(result);
+
+
+	end = clock();
+	t = (float)(end - start);
+	printf("1차원 배열로 구현했을 때의 실행시간 : %.3f [ms]\n", t);
+
+
+	return 0;
+
+}

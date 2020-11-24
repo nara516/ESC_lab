@@ -1,0 +1,62 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h> 
+
+int number(int num);
+int main(void)
+{
+	int num;
+
+	printf("숫자를 입력하세요. ");
+	scanf("%d", &num);
+
+	printf("1의 개수: %d \n", number(num));
+	
+	return 0;
+
+}
+
+
+int number(int x)
+{
+	int num = x;
+	int ab;
+	int cnt=0;
+	int m=0;
+	int a=1;
+
+	if( num > 0 ) {
+
+		for( int i=0 ; i<32 ; i++) {
+
+			a = 1 << i ;
+		
+			if( a & num )
+				cnt++;
+
+		}
+	}
+
+
+	else if( num < 0) {
+		
+		ab = abs(num);	//양수취급하기 위해 절댓값으로 변환
+
+		for( int i =0 ; i<32 ; i++) {	//1의 개수를 센 다음 총 비트 수에서 빼기(2의 보수)
+		
+			a = 1 << i ;
+
+			if( a & ab )
+				m++;
+				
+		}
+		
+		cnt = (32-m+1);	// +1
+
+	}
+	
+	
+	return cnt;
+
+
+}

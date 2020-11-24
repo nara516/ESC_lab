@@ -1,0 +1,227 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <time.h>
+#include <pthread.h>
+
+#define REF_SIZE 2048
+#define TEST_SIZE 4096
+#define VECTOR_LENGTH 2048
+
+typedef struct {
+	
+	float *v;
+	int label;
+
+} Data;
+
+typedef struct {
+	
+	float dist;
+	int label;
+
+} Distance;
+
+int compare(const void*x, const void*y);
+void *t_function(void *x);
+Data *ref;
+Data *test;
+Distance *result1;
+Distance *result2;
+Distance *result3;
+Distance *result4;
+
+int main(int argc, char *argv[])
+{
+	int i, j;
+
+	clock_t start, end;
+	float t;		
+
+	ref = (Data*)malloc(sizeof(Data)*REF_SIZE);
+	test = (Data*)malloc(sizeof(Data)*TEST_SIZE);
+	result1 = (Distance*)malloc(sizeof(Distance)*(REF_SIZE/4));
+	result2 = (Distance*)malloc(sizeof(Distance)*(REF_SIZE/4));
+	result3 = (Distance*)malloc(sizeof(Distance)*(REF_SIZE/4));
+	result4 = (Distance*)malloc(sizeof(Distance)*(REF_SIZE/4));
+
+	for( i=0 ; i<REF_SIZE ; i++)
+		ref[i].v = (float *)malloc(sizeof(float)*VECTOR_LENGTH);
+
+	for( i=0 ; i<TEST_SIZE ; i++)
+		test[i].v = (float *)malloc(sizeof(float)*VECTOR_LENGTH);
+
+
+	for( i=0 ; i<REF_SIZE ; i++) {
+
+		for( j=0 ; j<VECTOR_LENGTH ; j++) {
+
+			ref[i].v[j] = (rand() % 100) / 100.0;
+		
+		}
+
+		ref[i].label = (rand() % 3) +1;
+
+	}
+
+
+	for( i=0 ; i<TEST_SIZE ; i++) {
+
+		for( j=0 ; j<VECTOR_LENGTH ; j++) {
+
+			test[i].v[j] = (rand() % 100) / 100.0;
+		
+		}
+
+		test[i].label = (rand() % 3) +1;
+
+	}
+
+
+	pthread_t thread[4];
+	int thr_id;
+	int p1 = 0;
+	int p2 = 1024;
+	int p3 = 2048;
+	int p4 = 3072;
+
+	start = clock();
+
+	thr_id = pthread_create(&thread[0], NULL, t_function, (void *)&p1);
+	if( thr_id < 0 )
+		printf("thread1 thread create error. \n");
+
+	thr_id = pthread_create(&thread[1], NULL, t_function, (void *)&p2);
+	if( thr_id < 0 )
+		printf("thread2 thread create error. \n");
+
+	thr_id = pthread_create(&thread[2], NULL, t_function, (void *)&p3);
+	if( thr_id < 0 )
+		printf("thread3 thread create error. \n");
+
+	thr_id = pthread_create(&thread[3], NULL, t_function, (void *)&p4);
+	if( thr_id < 0 )
+		printf("thread4 thread create error. \n");
+
+	pthread_join(thread[0], NULL);
+	pthread_join(thread[1], NULL);
+	pthread_join(thread[2], NULL);
+	pthread_join(thread[3], NULL);
+
+	end = clock();
+	t = (float)(end - start);
+	printf("입력벡터 4개 그룹 일 때 실행시간 : %.3f [s]\n", t/1000);
+
+
+	free(ref);
+	free(test);
+	free(result1);
+	free(result2);
+	free(result3);
+	free(result4);
+
+	
+	return 0;
+	
+}
+
+void *t_function(void *x) {
+
+	int p = *((int *)x);
+	Distance *a;
+	int i, j, h;
+	int k =45;
+
+	switch(p) {
+		
+		case 0:
+			a = result1;
+			break;
+				
+		case 1024:
+			a = result2;
+			break;
+
+		case 2048:
+			a = result3;
+			break;
+
+		case 3072:
+			a = result4;
+			break;
+
+	}
+
+	for( i=p ; i<(p+1024) ; i++) {
+	
+		printf("%d번째 test data \n", i+1);
+
+		for( j=0 ; j<REF_SIZE ; j++) {
+
+			float sum = 0;
+	
+			for( h=0 ; h<VECTOR_LENGTH ; h++) {
+
+				sum += pow( (ref[j].v[h] - test[i].v[h]), 2);
+
+			}
+		
+			a[j].dist = sum;		
+			a[j].label = ref[j].label;
+			//printf("a[%d].dist / label = %f , %d \n ", j+1, a[j].dist, a[j].label);
+
+		}	
+
+		qsort(a, REF_SIZE, sizeof(a[0]), compare);
+
+/*		int cnt1 = 0;
+		int cnt2 = 0;
+		int cnt3 = 0;
+
+		for( i=0 ; i<k ; i++) {
+
+			//printf("%d : %f \n", i+1, a[i].dist);
+
+			if(a[i].label == 1)
+				cnt1++;
+			
+			else if(a[i].label == 2)
+				cnt2++;
+
+			else if(a[i].label == 3)
+				cnt3++;
+
+		}
+	
+		if(cnt1>=cnt2 && cnt1>=cnt3)
+			printf("분류 결과 : 1 \n"); 
+
+		else if(cnt2>=cnt1 && cnt2>=cnt3)
+			printf("분류 결과 : 2 \n"); 
+
+		else if(cnt3>=cnt1 && cnt3>=cnt1)
+			printf("분류 결과 : 3 \n"); 	*/
+
+
+	}
+
+}
+
+int compare(const void*x, const void*y)
+{
+	
+	const Distance *a = (const Distance *) x;
+	const Distance *b = (const Distance *) y;
+
+	if( (a->dist) > (b->dist) )
+		return 1;
+		
+	else if( (a->dist) < (b->dist) )
+		 return -1;
+
+	else
+		return 0; 
+
+}
+
+		

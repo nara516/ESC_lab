@@ -1,0 +1,331 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+#include <time.h>
+#define IRIS_SIZE 150
+
+typedef struct {
+	
+	double a;		
+	double b;		
+	double c;		
+	double d;		
+	char label[150];
+
+} Data;
+
+typedef struct {
+	
+	double dist;
+	char label[150];
+
+} Distance;
+
+
+int compare(const void *x, const void *y);
+int main(int argc, char *argv[])
+{
+
+	FILE *fp1;	
+
+	int clustering = 5;	//클러스터링 횟수 지정
+
+	int x, i;
+	int cnt1 = 0;
+	int cnt2 = 0;
+	int cnt3 = 0;
+	double sum1, sum2, sum3;
+	double sum1_a, sum1_b, sum1_c, sum1_d;
+	double sum2_a, sum2_b, sum2_c, sum2_d;
+	double sum3_a, sum3_b, sum3_c, sum3_d;
+
+	char iris1[] = "Iris-setosa";
+	char iris2[] = "Iris-versicolor";
+	char iris3[] = "Iris-virginica";
+
+	Data center1;	//초기 중심점
+	Data center2;
+	Data center3;
+	
+	Data avg_center1;		//평균중심점
+	Data avg_center2;
+	Data avg_center3;
+	
+	Distance result[3] = {0};
+
+	Data *iris = (Data *)malloc(sizeof(Data)*IRIS_SIZE);	
+	Data *cluster1 = (Data *)malloc(sizeof(Data)*IRIS_SIZE);
+	Data *cluster2 = (Data *)malloc(sizeof(Data)*IRIS_SIZE);
+	Data *cluster3 = (Data *)malloc(sizeof(Data)*IRIS_SIZE);		
+
+
+	fp1 = fopen(argv[1], "r");		
+		
+		if( fp1 == NULL)
+			printf("iris data 파일 열기 실패\n");
+		else
+			printf("iris data 파일 열기 성공\n");
+
+		for( i=0 ; i<IRIS_SIZE ; i++)
+			fscanf(fp1, "%lf,%lf,%lf,%lf,%s", &iris[i].a, &iris[i].b, &iris[i].c, &iris[i].d, iris[i].label );
+
+	fclose(fp1);
+
+	srand(time(NULL)); 
+
+	center1.a = (rand() % 9/10.0) + 4;		//클러스터 세개의 중심점 좌표지정
+	center2.a = (rand() % 9/10.0) + 4;
+	center3.a = (rand() % 9/10.0) + 4;		//a : 4이상 8미만, b : 2이상 4미만
+
+	center1.b = (rand() % 5/10.0) + 2;		//c : 1이상 7미만, d : 0이상 3미만
+	center2.b = (rand() % 5/10.0) + 2;
+	center3.b = (rand() % 5/10.0) + 2;	
+
+	center1.c = (rand() % 8/10.0) + 1;
+	center2.c = (rand() % 8/10.0) + 1;
+	center3.c = (rand() % 8/10.0) + 1;	
+
+	center1.d = (rand() % 4/10.0);
+	center2.d = (rand() % 4/10.0);
+	center3.d = (rand() % 4/10.0);	
+
+	printf("center1 : %lf, %lf, %lf, %lf \n", center1.a, center1.b, center1.c, center1.d);
+	printf("center2 : %lf, %lf, %lf, %lf \n", center2.a, center2.b, center2.c, center2.d);
+	printf("center3 : %lf, %lf, %lf, %lf \n", center3.a, center3.b, center3.c, center3.d);
+
+
+	for( i=0 ; i<IRIS_SIZE ; i++ ) {
+
+		sum1 = pow(center1.a - iris[i].a, 2) + pow(center1.b - iris[i].b, 2) + pow(center1.c - iris[i].c, 2) + pow(center1.d - iris[i].d, 2); 
+		result[0].dist = sum1;
+		strcpy(result[0].label, iris1);
+			
+		sum2 = pow(center2.a - iris[i].a, 2) + pow(center2.b - iris[i].b, 2) + pow(center2.c - iris[i].c, 2) + pow(center2.d - iris[i].d, 2); 
+		result[1].dist =  sum2;
+		strcpy(result[1].label, iris2);
+
+		sum3 = pow(center3.a - iris[i].a, 2) + pow(center3.b - iris[i].b, 2) + pow(center3.c - iris[i].c, 2) + pow(center3.d - iris[i].d, 2); 
+		result[2].dist =  sum3;
+		strcpy(result[2].label, iris3);
+
+
+		qsort(result, 3, sizeof(result[0]), compare);
+		//printf("1: %lf, 2: %lf, 3: %lf \n", result[0].dist, result[1].dist, result[2].dist);
+
+
+		if( !strcmp(result[0].label, iris1) ) {
+
+			cluster1[cnt1] = iris[i];	
+
+			cnt1++;
+
+			printf("초기 클러스터링 %d번째 데이터 분류결과 : cluster1 \n", i+1);
+
+			if( !strcmp(iris[i].label, iris1) )
+				printf("분류성공 \n");
+
+			else if( !strcmp(iris[i].label, iris2) || !strcmp(iris[i].label, iris3) )
+				printf("분류실패 \n");
+
+		}
+
+		else if( !strcmp(result[0].label, iris2) ) {
+
+			cluster2[cnt2] = iris[i];	
+
+			cnt2++;
+
+			printf("초기 클러스터링 %d번째 데이터 분류결과 : cluster2 \n", i+1);
+
+			if( !strcmp(iris[i].label, iris2) )
+				printf("분류성공 \n");
+
+			else if( !strcmp(iris[i].label, iris1) || !strcmp(iris[i].label, iris3) )
+				printf("분류실패 \n");
+
+		}
+
+		else if( !strcmp(result[0].label, iris3) ) {
+
+			cluster3[cnt3] = iris[i];	
+
+			cnt3++;
+
+			printf("초기 클러스터링 %d번째 데이터 분류결과 : cluster3 \n", i+1);
+
+			if( !strcmp(iris[i].label, iris3) )
+				printf("분류성공 \n");
+
+			else if( !strcmp(iris[i].label, iris1) || !strcmp(iris[i].label, iris2) )
+				printf("분류실패 \n");
+
+		}
+
+		printf("cnt1 : %d, cnt2 : %d, cnt3 : %d \n ", cnt1, cnt2, cnt3);
+		printf("\n");
+
+	}
+
+
+	//분류된 클러스터의 데이터들의 평균을 중심으로 설정 -> 모든데이터를 중심3개와 거리계산 -> 정렬 후 분류 -> 반복
+
+	for( x=0; x<clustering ; x++) {
+
+		printf("%d번째 평균 중심점 찾기 \n", x+1);
+
+		for( i=0 ; i<cnt1 ; i++) { 	//평균 중심점 구하기
+			
+			sum1_a += cluster1[i].a;
+			sum1_b += cluster1[i].b;
+			sum1_c += cluster1[i].c;
+			sum1_d += cluster1[i].d;
+
+		}
+
+		for( i=0 ; i<cnt2 ; i++) {
+
+			sum2_a += cluster2[i].a;
+			sum2_b += cluster2[i].b;
+			sum2_c += cluster2[i].c;
+			sum2_d += cluster2[i].d;
+
+		}
+
+		for( i=0 ; i<cnt3 ; i++) {
+
+			sum3_a += cluster3[i].a;
+			sum3_b += cluster3[i].b;
+			sum3_c += cluster3[i].c;
+			sum3_d += cluster3[i].d;
+
+		}
+
+		avg_center1.a = sum1_a/cnt1;
+		avg_center1.b = sum1_b/cnt1;
+		avg_center1.c = sum1_c/cnt1;
+		avg_center1.d = sum1_d/cnt1;
+
+		avg_center2.a = sum2_a/cnt2;
+		avg_center2.b = sum2_b/cnt2;
+		avg_center2.c = sum2_c/cnt2;
+		avg_center2.d = sum2_d/cnt2;
+
+		avg_center3.a = sum3_a/cnt3;
+		avg_center3.b = sum3_b/cnt3;
+		avg_center3.c = sum3_c/cnt3;
+		avg_center3.d = sum3_d/cnt3;
+
+		cnt1 = 0;  cnt2 = 0;  cnt3 = 0;
+		sum1 = 0; sum2 = 0; sum3 = 0;
+		sum1_a = 0;  sum1_b = 0;  sum1_c = 0;  sum1_d = 0;
+		sum2_a = 0;  sum2_b = 0;  sum2_c = 0;  sum2_d = 0;
+		sum3_a = 0;  sum3_b = 0;  sum3_c = 0;  sum3_d = 0;
+
+		printf("avg_center1 : %lf, %lf, %lf, %lf \n", avg_center1.a, avg_center1.b, avg_center1.c, avg_center1.d);
+		printf("avg_center2 : %lf, %lf, %lf, %lf \n", avg_center2.a, avg_center2.b, avg_center2.c, avg_center2.d);
+		printf("avg_center3 : %lf, %lf, %lf, %lf \n", avg_center3.a, avg_center3.b, avg_center3.c, avg_center3.d);
+
+
+		for( i=0 ; i<IRIS_SIZE ; i++) { 
+
+			sum1 = pow(avg_center1.a - iris[i].a , 2) + pow(avg_center1.b - iris[i].b, 2) + pow(avg_center1.c - iris[i].c, 2) + pow(avg_center1.d - iris[i].d, 2); 
+			result[0].dist = sum1;
+			strcpy(result[0].label, iris1);
+
+			sum2 = pow(avg_center2.a - iris[i].a , 2) + pow(avg_center2.b - iris[i].b, 2) + pow(avg_center2.c - iris[i].c, 2) + pow(avg_center2.d - iris[i].d, 2); 
+			result[1].dist = sum2;
+			strcpy(result[1].label, iris2);
+
+			sum3 = pow(avg_center3.a - iris[i].a , 2) + pow(avg_center3.b - iris[i].b, 2) + pow(avg_center3.c - iris[i].c, 2) + pow(avg_center3.d - iris[i].d, 2); 
+			result[2].dist = sum3;
+			strcpy(result[2].label, iris3);
+
+
+			qsort(result, 3, sizeof(result[0]), compare);
+			//printf("1: %lf, 2: %lf, 3: %lf \n", result[0].dist, result[1].dist, result[2].dist);
+
+
+			if( !strcmp(result[0].label, iris1) ) {
+
+				cluster1[cnt1] = iris[i];	
+
+				cnt1++;
+				
+				printf("%d번째 클러스터링 %d번째 데이터 분류결과 : cluster1 \n", x+1, i+1);
+		
+				if( !strcmp(iris[i].label, iris1) )
+					printf("분류성공 \n");
+
+				else if( !strcmp(iris[i].label, iris2) || !strcmp(iris[i].label, iris3) )
+					printf("분류실패 \n");
+
+			}
+
+			else if( !strcmp(result[0].label, iris2) ) {
+
+				cluster2[cnt2] = iris[i];	
+
+				cnt2++;
+
+				printf("%d번째 클러스터링 %d번째 데이터 분류결과 : cluster2 \n", x+1, i+1);
+			
+				if( !strcmp(iris[i].label, iris2) )
+					printf("분류성공 \n");
+
+				else if( !strcmp(iris[i].label, iris1) || !strcmp(iris[i].label, iris3) )
+					printf("분류실패 \n");
+
+			}
+
+			else if( !strcmp(result[0].label, iris3) ) {
+
+
+				cluster3[cnt3] = iris[i];	
+
+				cnt3++;
+
+				printf("%d번째 클러스터링 %d번째 데이터 분류결과 : cluster3 \n", x+1, i+1);
+
+				if( !strcmp(iris[i].label, iris3) )
+					printf("분류성공 \n");
+
+				else if( !strcmp(iris[i].label, iris1) || !strcmp(iris[i].label, iris2) )
+					printf("분류실패 \n");
+
+			}
+
+			printf("cnt1 : %d, cnt2 : %d, cnt3 : %d \n ", cnt1, cnt2, cnt3);
+			printf("\n");
+
+		}
+
+	}
+
+
+	free(iris);
+	free(cluster1);
+	free(cluster2);
+	free(cluster3);
+
+
+	return 0;
+	
+}
+
+int compare(const void*x, const void*y)
+{
+	
+	const Distance *a = (const Distance *) x;
+	const Distance *b = (const Distance *) y;
+
+	if( (a->dist) > (b->dist) )
+		return 1;
+		
+	else if( (a->dist) < (b->dist) )
+		 return -1;
+
+	else
+		return 0; 
+
+}

@@ -1,0 +1,46 @@
+#include <stdio.h>
+
+int number(int num);
+int main(void)
+{
+	int num;
+
+	printf("숫자를 입력하세요. ");
+	scanf("%d", &num);
+
+	printf("1의 개수: %d \n", number(num));
+	
+	return 0;
+
+}
+
+
+int number(int x)
+{
+	int num = x;
+	int i = 0;
+	int a;
+	
+	a = num*2;
+	
+	while(1) {
+
+		num = num>>1;
+		a = a/2;
+		
+		if(num == 1) {
+			if(num*2 != a)
+				i=i+2;
+			else if(num*2 == a)
+				i++;
+			break;
+		}
+	
+		else if(num*2 != a )
+			i++;
+
+	}
+
+	return i;
+
+}

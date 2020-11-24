@@ -1,0 +1,57 @@
+#include <stdio.h>
+
+int main(void)
+{
+	int x, y, z;
+	int i, j, k;
+	int sum;
+
+A:	{
+		printf("대상 숫자를 입력하세요.: ");
+		scanf("%d", &x);
+		printf("\n");
+	}
+
+B:	{
+		printf("연속된 수의 개수를 입력하세요.: ");
+		scanf("%d", &y);
+		printf("\n");
+	}
+	
+	
+	if( (x<0) || (y<0) ) {
+		printf("ERROR: 양의 정수로 입력해주세요.\n");
+		printf("\n");
+		goto A;
+	}
+
+
+	z=( x/y );		//중간숫자
+	if(x % y != 0 )
+		z=z+1;	
+
+	k=( z-(y/2) );	//처음숫자
+	j=( k+y-1 );	//마지막 숫자
+	 
+
+	for(i=0 ; i<y ; i++)
+		sum+=(k+i);
+	
+	if(sum==x) {
+		printf("%d = ", x);
+
+		for(i=0; i<(y-1); i++) {
+			printf("%d + ", k+i);
+		}
+		printf("%d", j);
+	}
+	
+	else 
+	printf("오답 \n");
+
+
+	return 0;
+
+} 
+
+
